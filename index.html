@@ -8,6 +8,8 @@
     :root {
       --w: 800px;
       --h: 480px;
+      --safe-offset-y: -16px;
+      --panel-scale: 0.98; 
       --fg: #000;
       --bg: #fff;
     }
@@ -18,12 +20,14 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
       background: var(--bg);
       color: var(--fg);
-      display:flex;
       align-items:flex-start;
       padding-top: 8px;
       justify-content:center;
     }
     #panel {
+      position: fixed;
+      top: 0;
+      left: 50%;
       width: var(--w);
       height: var(--h);
       box-sizing: border-box;
