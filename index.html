@@ -14,12 +14,13 @@
     html, body { height:100%; }
     body {
       margin:0;
-      padding-top: 10px;
+      height: 100%;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
       background: var(--bg);
       color: var(--fg);
       display:flex;
       align-items:flex-start;
+      padding-top: 8px;
       justify-content:center;
     }
     #panel {
@@ -30,6 +31,7 @@
       display: grid;
       grid-template-rows: auto auto 1fr auto;
       row-gap: 14px;
+      transform: translateY(-12px);
     }
     .title { font-weight: 700; font-size: 26px; display:flex; align-items: baseline; justify-content: space-between; }
     .title small { font-weight: 500; font-size: 16px; opacity: .85; }
