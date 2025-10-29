@@ -169,7 +169,7 @@
         const tMin = Number.isFinite(w.tmin) ? Math.round(w.tmin) : "--";
         const tMax = Number.isFinite(w.tmax) ? Math.round(w.tmax) : "--";
         const pop  = Number.isFinite(w.pop)  ? Math.round(w.pop)  : "--";
-        $("weather").textContent = `${w.label}：${tMin}–${tMax}°C<br>降雨概率 ${pop}%`;
+        $("weather").innerHTML = `${w.label}：${tMin}–${tMax}°C<br>降雨概率 ${pop}%`;
       }else{
         $("weather-card").style.display = 'none';
       }
