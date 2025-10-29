@@ -109,7 +109,33 @@
 
     async function loadQuotes(){if(CONFIG.quotesSource&&CONFIG.quotesSource.type==='url'&&CONFIG.quotesSource.url){try{const res=await fetch(CONFIG.quotesSource.url,{cache:'no-store'});const arr=await res.json();if(Array.isArray(arr))return arr.filter(x=>typeof x==='string'&&x.trim().length);}catch(e){}}return CONFIG.quotes||[];}
     function pickQuote(quotes,dayIndex){if(!quotes||quotes.length===0)return"";const idx=Math.abs(dayIndex)%quotes.length;return quotes[idx];}
-    async function loadWeather(loc){if(!loc)return null;try{const url=`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,precipitation&timezone=auto`;const res=await fetch(url,{cache:'no-store'});const data=await res.json();const t=data?.current?.temperature_2m;const p=data?.current?.precipitation??0;return{temp:t,rain:p,label:loc.label};}catch(e){return null;}}
+    
+    async function loadWeather(loc){
+      if(!loc) return null;
+      try{
+        const url =
+          `https://api.open-meteo.com/v1/forecast` +
+          `?latitude=${loc.latitude}` +
+          `&longitude=${loc.longitude}` +
+          `&timezone=auto` +
+          `&daily=temperature_2m_min,temperature_2m_max,precipitation_probability_max` +
+          `&forecast_days=1`;
+        const res = await fetch(url, { cache: 'no-store' });
+        const data = await res.json();
+    
+        const tmin = data?.daily?.temperature_2m_min?.[0];
+        const tmax = data?.daily?.temperature_2m_max?.[0];
+        const pop  = data?.daily?.precipitation_probability_max?.[0]; // 概率（%）
+    
+        return {
+          tmin, tmax, pop,
+          label: loc.label
+        };
+      }catch(e){
+        return null;
+      }
+    }
+
     function applyQR(imgUrl){const qr=$("qr");if(CONFIG.qrImage){const img=new Image();img.src=CONFIG.qrImage;img.alt="QR";img.style.width="100%";img.style.height="100%";img.loading="eager";qr.innerHTML="";qr.appendChild(img);}else{qr.textContent="";}}
 
     async function main(){
@@ -125,8 +151,17 @@
       const ev=nextAnnualEvent(CONFIG.annualEvents||[],today);
       if(ev)$("countdown").textContent=`${ev.name}：还有 ${ev.daysLeft} 天（${fmtDate(ev.date)}）`;else $("countdown-card").style.display='none';
       const loc=CONFIG.location?{label:sp.get('label')||CONFIG.location.label,latitude:Number(sp.get('lat')||CONFIG.location.latitude),longitude:Number(sp.get('lon')||CONFIG.location.longitude)}:null;
-      const w=await loadWeather(loc);
-      if(w){const umbrella=(w.rain&&Number(w.rain)>0)?" · 记得带伞":"";$("weather").textContent=`${w.label}：${Math.round(w.temp)}°C${umbrella}`;}else $("weather-card").style.display='none';
+
+      const w = await loadWeather(loc);
+      if(w){
+        const tMin = Number.isFinite(w.tmin) ? Math.round(w.tmin) : "--";
+        const tMax = Number.isFinite(w.tmax) ? Math.round(w.tmax) : "--";
+        const pop  = Number.isFinite(w.pop)  ? Math.round(w.pop)  : "--";
+        $("weather").textContent = `${w.label}：${tMin}–${tMax}°C · 降雨概率 ${pop}%`;
+      }else{
+        $("weather-card").style.display = 'none';
+      }
+
       const allQuotes=await loadQuotes();
       const q=pickQuote(allQuotes,daysSinceEpoch(today));
       if(q){document.getElementById("quote").textContent=q;}else{document.getElementById("quote-card").style.display="none";}
