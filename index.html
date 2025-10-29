@@ -6,54 +6,37 @@
   <title>我们的小面板 · E-Ink 800×480</title>
   <style>
     :root {
-      --w: 800px;
-      --h: 480px;
-      --safe-offset-y: -16px;
-      --panel-scale: 0.98; 
-      --fg: #000;
-      --bg: #fff;
+      --w: 800px; --h: 480px; --safe-offset-y: -16px; --panel-scale: 0.98;
+      --fg: #000; --bg: #fff;
     }
     html, body { height:100%; }
-    body {
-      margin:0;
-      height: 100%;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-      background: var(--bg);
-      color: var(--fg);
-      align-items:flex-start;
-      padding-top: 8px;
-      justify-content:center;
-    }
-    #panel {
-      position: fixed;
-      top: 0;
-      left: 50%;
-      width: var(--w);
-      height: var(--h);
-      box-sizing: border-box;
-      padding: 28px 32px;
-      display: grid;
-      grid-template-rows: auto auto 1fr auto;
-      row-gap: 14px;
-      transform-origin: top center;
-      transform: translateX(-50%) translateY(var(--safe-offset-y)) scale(var(--panel-scale));
-    }
-    .title { font-weight: 700; font-size: 26px; display:flex; align-items: baseline; justify-content: space-between; }
-    .title small { font-weight: 500; font-size: 16px; opacity: .85; }
-    .big-day { display:flex; align-items: center; justify-content: center; border: 3px solid #000; border-radius: 18px; padding: 18px; height: 200px; }
-    .big-number { font-size: 120px; font-weight: 800; line-height: 1; letter-spacing: 2px; }
-    .big-caption { margin-left: 18px; font-size: 24px; font-weight: 600; }
-    .rows { display:flex; gap: 20px; align-items: flex-start; }
-    .card { flex:1; border: 2px solid #000; border-radius: 16px; padding: 14px 16px; min-height: 120px; display:flex; flex-direction: column; justify-content: center; gap: 8px; }
-    .card h3 { margin:0; font-size:20px; }
-    .card .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-    .footer { display:flex; justify-content: space-between; align-items:center; font-size: 16px; opacity:.9; }
-    .qr { height: 64px; width: 64px; border:2px solid #000; border-radius: 8px; display:flex; align-items:center; justify-content:center; font-size:12px; }
-    * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body{ margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);align-items:flex-start;padding-top:8px;justify-content:center;}
+    #panel{ position:fixed;top:0;left:50%;width:var(--w);height:var(--h);box-sizing:border-box;padding:28px 32px;display:grid;grid-template-rows:auto auto 1fr auto;row-gap:14px;transform-origin:top center;transform:translateX(-50%) translateY(var(--safe-offset-y)) scale(var(--panel-scale));}
+    .title{ font-weight:700;font-size:26px;display:flex;align-items:baseline;justify-content:space-between;}
+    .title small{ font-weight:500;font-size:16px;opacity:.85;}
 
-    /* 临时隐藏底部提示与二维码，保留原位置 */
-    #footer-hint, #qr { visibility: hidden; }
-    
+    /* === 修改这里：大框由左右两栏组成（左：计数；右：图片） === */
+    .big-day{
+      display:grid; grid-template-columns: 1fr 220px; /* 右侧图片固定宽度，可按需改 */
+      align-items:center; justify-content:space-between; gap:16px;
+      border:3px solid #000; border-radius:18px; padding:18px; height:200px;
+    }
+    .big-left{ display:flex; align-items:center; }
+    .big-number{ font-size:120px; font-weight:800; line-height:1; letter-spacing:2px; }
+    .big-caption{ margin-left:18px; font-size:24px; font-weight:600; }
+
+    /* 右侧图片样式 */
+    .big-photo{ width:100%; height:100%; border-radius:12px; overflow:hidden; border:2px solid #000;}
+    .big-photo img{ width:100%; height:100%; object-fit:cover; image-rendering: -webkit-optimize-contrast; }
+
+    .rows{ display:flex; gap:20px; align-items:flex-start; }
+    .card{ flex:1; border:2px solid #000; border-radius:16px; padding:14px 16px; min-height:120px; display:flex; flex-direction:column; justify-content:center; gap:8px;}
+    .card h3{ margin:0; font-size:20px; }
+    .card .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; }
+    .footer{ display:flex; justify-content:space-between; align-items:center; font-size:16px; opacity:.9; }
+    .qr{ height:64px; width:64px; border:2px solid #000; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px;}
+    *{ -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+    #footer-hint, #qr { visibility:hidden; }
   </style>
 </head>
 <body>
@@ -63,9 +46,15 @@
       <small id="today"></small>
     </div>
 
+    <!-- === 修改这里：将原有内容包到 .big-left，并新增 .big-photo === -->
     <div class="big-day">
-      <div class="big-number" id="days">--</div>
-      <div class="big-caption" id="since">自 -- 起</div>
+      <div class="big-left">
+        <div class="big-number" id="days">--</div>
+        <div class="big-caption" id="since">自 -- 起</div>
+      </div>
+      <div class="big-photo">
+        <img id="hero" alt="我们的照片" loading="eager" />
+      </div>
     </div>
 
     <div class="rows">
@@ -102,82 +91,75 @@
       location: { label: "杭州", latitude: 30.18, longitude: 120.31 },
       quotesSource: { type: 'inline', url: '' },
       quotes: [
-        "和你在一起，普通日子也会发光。",
-        "你是我见过最温柔的夏风，也是最恰好的晚霞。",
-        "想把一切温柔和美好都给你。",
-        "和你走过的每一步，都是答案。",
-        "今天也要喜欢你很多很多。",
-        "宇宙山河浪漫，人间点滴温暖，都值得为你。"
+        "和你在一起，普通日子也会发光。","你是我见过最温柔的夏风，也是最恰好的晚霞。",
+        "想把一切温柔和美好都给你。","和你走过的每一步，都是答案。",
+        "今天也要喜欢你很多很多。","宇宙山河浪漫，人间点滴温暖，都值得为你。"
       ],
-      qrImage: ""
+      qrImage: "",
+      /* === 新增：右侧图片地址（可被 URL 参数覆盖） === */
+      heroImage: "https://raw.githubusercontent.com/ChronoWeaver/panel/main/picture_1.png"  // 例如 "pictures/us.jpg"
     };
 
     const $ = id => document.getElementById(id);
-
     function fmtDate(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${dd}`}
     function daysBetween(a,b){const MS=86400000;const aUTC=Date.UTC(a.getFullYear(),a.getMonth(),a.getDate());const bUTC=Date.UTC(b.getFullYear(),b.getMonth(),b.getDate());return Math.floor((bUTC-aUTC)/MS)}
     function nextAnnualEvent(events,today){let best=null;for(const e of events){let d=new Date(today.getFullYear(),e.month-1,e.day);if(daysBetween(today,d)<0){d=new Date(today.getFullYear()+1,e.month-1,e.day);}const left=daysBetween(today,d);if(!best||left<best.daysLeft)best={name:e.name,date:d,daysLeft:left};}return best;}
     function daysSinceEpoch(d){const MS=86400000;const epoch=new Date(Date.UTC(1970,0,1));const dUTC=Date.UTC(d.getFullYear(),d.getMonth(),d.getDate());return Math.floor((dUTC-epoch.getTime())/MS);}
-
     async function loadQuotes(){if(CONFIG.quotesSource&&CONFIG.quotesSource.type==='url'&&CONFIG.quotesSource.url){try{const res=await fetch(CONFIG.quotesSource.url,{cache:'no-store'});const arr=await res.json();if(Array.isArray(arr))return arr.filter(x=>typeof x==='string'&&x.trim().length);}catch(e){}}return CONFIG.quotes||[];}
     function pickQuote(quotes,dayIndex){if(!quotes||quotes.length===0)return"";const idx=Math.abs(dayIndex)%quotes.length;return quotes[idx];}
-    
     async function loadWeather(loc){
       if(!loc) return null;
       try{
-        const url =
-          `https://api.open-meteo.com/v1/forecast` +
-          `?latitude=${loc.latitude}` +
-          `&longitude=${loc.longitude}` +
-          `&timezone=auto` +
-          `&daily=temperature_2m_min,temperature_2m_max,precipitation_probability_max` +
-          `&forecast_days=1`;
-        const res = await fetch(url, { cache: 'no-store' });
-        const data = await res.json();
-    
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&timezone=auto&daily=temperature_2m_min,temperature_2m_max,precipitation_probability_max&forecast_days=1`;
+        const res = await fetch(url, { cache: 'no-store' }); const data = await res.json();
         const tmin = data?.daily?.temperature_2m_min?.[0];
         const tmax = data?.daily?.temperature_2m_max?.[0];
-        const pop  = data?.daily?.precipitation_probability_max?.[0]; // 概率（%）
-    
-        return {
-          tmin, tmax, pop,
-          label: loc.label
-        };
-      }catch(e){
-        return null;
+        const pop  = data?.daily?.precipitation_probability_max?.[0];
+        return { tmin, tmax, pop, label: loc.label };
+      }catch(e){ return null; }
+    }
+    function applyQR(){const qr=$("qr");if(CONFIG.qrImage){const img=new Image();img.src=CONFIG.qrImage;img.alt="QR";img.style.width="100%";img.style.height="100%";img.loading="eager";qr.innerHTML="";qr.appendChild(img);}else{qr.textContent="";}}
+
+    /* === 新增：设置右侧图片（支持 URL 参数 ?img=... 覆盖） === */
+    function applyHero(sp){
+      const url = sp.get('img') || CONFIG.heroImage;
+      const el = $("hero");
+      if(url){ el.src = url; }
+      else{
+        // 没有图片时，隐藏右侧占位并让左侧铺满
+        el.closest(".big-photo").style.display = "none";
+        const box = document.querySelector(".big-day");
+        box.style.gridTemplateColumns = "1fr"; // 只剩左栏
       }
     }
-
-    function applyQR(imgUrl){const qr=$("qr");if(CONFIG.qrImage){const img=new Image();img.src=CONFIG.qrImage;img.alt="QR";img.style.width="100%";img.style.height="100%";img.loading="eager";qr.innerHTML="";qr.appendChild(img);}else{qr.textContent="";}}
 
     async function main(){
       const sp=new URLSearchParams(location.search);
       const startStr=sp.get('start')||CONFIG.startDate;
-      const start=new Date(startStr);
-      const today=new Date();
+      const start=new Date(startStr); const today=new Date();
       $("headline").textContent=CONFIG.headline||"在一起的日子";
       $("today").textContent=fmtDate(today);
       const d=daysBetween(start,today);
-      $("days").textContent=d;
-      $("since").textContent=`自 ${fmtDate(start)} 起`;
-      const ev=nextAnnualEvent(CONFIG.annualEvents||[],today);
-      if(ev)$("countdown").textContent=`${ev.name}：还有 ${ev.daysLeft} 天（${fmtDate(ev.date)}）`;else $("countdown-card").style.display='none';
-      const loc=CONFIG.location?{label:sp.get('label')||CONFIG.location.label,latitude:Number(sp.get('lat')||CONFIG.location.latitude),longitude:Number(sp.get('lon')||CONFIG.location.longitude)}:null;
+      $("days").textContent=d; $("since").textContent=`自 ${fmtDate(start)} 起`;
 
+      applyHero(sp); // ← 放在这里即可
+
+      const ev=nextAnnualEvent(CONFIG.annualEvents||[],today);
+      if(ev)$("countdown").textContent=`${ev.name}：还有 ${ev.daysLeft} 天（${fmtDate(ev.date)}）`; else $("countdown-card").style.display='none';
+
+      const loc=CONFIG.location?{label:sp.get('label')||CONFIG.location.label,latitude:Number(sp.get('lat')||CONFIG.location.latitude),longitude:Number(sp.get('lon')||CONFIG.location.longitude)}:null;
       const w = await loadWeather(loc);
       if(w){
         const tMin = Number.isFinite(w.tmin) ? Math.round(w.tmin) : "--";
         const tMax = Number.isFinite(w.tmax) ? Math.round(w.tmax) : "--";
         const pop  = Number.isFinite(w.pop)  ? Math.round(w.pop)  : "--";
         $("weather").innerHTML = `${w.label}：${tMin}–${tMax}°C<br>降雨概率 ${pop}%`;
-      }else{
-        $("weather-card").style.display = 'none';
-      }
+      }else{ $("weather-card").style.display = 'none'; }
 
       const allQuotes=await loadQuotes();
       const q=pickQuote(allQuotes,daysSinceEpoch(today));
-      if(q){document.getElementById("quote").textContent=q;}else{document.getElementById("quote-card").style.display="none";}
-      applyQR(CONFIG.qrImage);
+      if(q){$("quote").textContent=q;}else{$("quote-card").style.display="none";}
+      applyQR();
     }
     main();
   </script>
