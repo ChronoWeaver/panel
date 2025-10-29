@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>我们的小面板 · E-Ink 800×480</title>
+  <style>
+    :root { --w: 800px; --h: 480px; --fg: #000; --bg: #fff; }
+    html, body { height:100%; }
+    body {
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg); color: var(--fg);
+      display:flex; align-items:center; justify-content:center;
+    }
+    #panel {
+      width: var(--w); height: var(--h); box-sizing: border-box; padding: 28px 32px;
+      display: grid; grid-template-rows: auto auto 1fr auto; row-gap: 14px;
+    }
+    .title { font-weight: 700; font-size: 26px; display:flex; align-items: baseline; justify-content: space-between; }
+    .title small { font-weight: 500; font-size: 16px; opacity: .85; }
+    .big-day { display:flex; align-items: center; justify-content: center; border: 3px solid #000; border-radius: 18px; padding: 18px; height: 200px; }
+    .big-number { font-size: 120px; font-weight: 800; line-height: 1; letter-spacing: 2px; }
+    .big-caption { margin-left: 18px; font-size: 24px; font-weight: 600; }
+    .rows { display:flex; gap: 20px; align-items: flex-start; }
+    .card { flex:1; border: 2px solid #000; border-radius: 16px; padding: 14px 16px; min-height: 120px; display:flex; flex-direction: column; justify-content: center; gap: 8px; }
+    .card h3 { margin:0; font-size:20px; }
+    .card .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .footer { display:flex; justify-content: space-between; align-items:center; font-size: 16px; opacity:.9; }
+    .qr { height: 64px; width: 64px; border:2px solid #000; border-radius: 8px; display:flex; align-items:center; justify-content:center; font-size:12px; }
+    * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  </style>
+</head>
+<body>
+  <div id="panel">
+    <div class="title">
+      <div id="headline">在一起的日子</div>
+      <small id="today"></small>
+    </div>
+
+    <div class="big-day">
+      <div class="big-number" id="days">--</div>
+      <div class="big-caption" id="since">自 -- 起</div>
+    </div>
+
+    <div class="rows">
+      <div class="card" id="countdown-card">
+        <h3>下个重要日子</h3>
+        <div class="mono" id="countdown">--</div>
+      </div>
+      <div class="card" id="weather-card">
+        <h3>TA 的城市</h3>
+        <div class="mono" id="weather">--</div>
+      </div>
+      <div class="card" id="quote-card">
+        <h3>今日一句</h3>
+        <div id="quote">--</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div id="footer-hint">提示：在 SenseCraft HMI 里选择器填写 <span class="mono">#panel</span>，设置刷新频率（推荐：每天 1 次）。</div>
+      <div id="qr" class="qr" title="可替换为你的二维码">QR</div>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = {
+      headline: "我们的小面板",
+      startDate: "2023-05-20",
+      annualEvents: [
+        { name: "在一起纪念日", month: 5, day: 20 },
+        { name: "她的生日", month: 11, day: 12 },
+        { name: "他的生日", month: 7, day: 8 },
+        { name: "情人节", month: 2, day: 14 }
+      ],
+      location: { label: "杭州", latitude: 30.18, longitude: 120.31 },
+
+      // ✅ 使用你的 GitHub Gist（Raw）作为每日一句来源
+      quotesSource: {
+        type: 'url',
+        url: 'https://gist.githubusercontent.com/ChronoWeaver/ef1176187f964dd8ef91ff0e3cd2873e/raw/5582c6e49b07175cbff9585903b19a7005027ac8/quotes.json'
+      },
+
+      // 本地备份，网络失败时兜底
+      quotes: [
+        "和你在一起，普通日子也会发光。",
+        "你是我见过最温柔的夏风，也是最恰好的晚霞。",
+        "想把一切温柔和美好都给你。"
+      ],
+      qrImage: ""
+    };
+
+    const $ = id => document.getElementById(id);
+
+    function fmtDate(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${dd}`}
+    function daysBetween(a,b){const MS=86400000;const aUTC=Date.UTC(a.getFullYear(),a.getMonth(),a.getDate());const bUTC=Date.UTC(b.getFullYear(),b.getMonth(),b.getDate());return Math.floor((bUTC-aUTC)/MS)}
+    function nextAnnualEvent(events,today){let best=null;for(const e of events){let d=new Date(today.getFullYear(),e.month-1,e.day);if(daysBetween(today,d)<0){d=new Date(today.getFullYear()+1,e.month-1,e.day);}const left=daysBetween(today,d);if(!best||left<best.daysLeft)best={name:e.name,date:d,daysLeft:left};}return best;}
+    function daysSinceEpoch(d){const MS=86400000;const epoch=new Date(Date.UTC(1970,0,1));const dUTC=Date.UTC(d.getFullYear(),d.getMonth(),d.getDate());return Math.floor((dUTC-epoch.getTime())/MS);}
+
+    async function loadQuotes(){
+      if(CONFIG.quotesSource && CONFIG.quotesSource.type==='url' && CONFIG.quotesSource.url){
+        try{
+          const res = await fetch(CONFIG.quotesSource.url, { cache: 'no-store' });
+          if(!res.ok) throw new Error(`fetch quotes failed: ${res.status}`);
+          const arr = await res.json();
+          if(Array.isArray(arr)) return arr.filter(x => typeof x === 'string' && x.trim().length);
+        }catch(e){
+          console.warn("[quotes] 远程获取失败，使用本地备份。", e);
+        }
+      }
+      return CONFIG.quotes || [];
+    }
+    function pickQuote(quotes,dayIndex){ if(!quotes||quotes.length===0) return ""; const idx=Math.abs(dayIndex)%quotes.length; return quotes[idx]; }
+
+    async function loadWeather(loc){
+      if(!loc) return null;
+      try{
+        const url=`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,precipitation&timezone=auto`;
+        const res=await fetch(url,{cache:'no-store'});
+        const data=await res.json();
+        const t=data?.current?.temperature_2m;
+        const p=data?.current?.precipitation ?? 0;
+        return { temp:t, rain:p, label:loc.label };
+      }catch(e){ return null; }
+    }
+
+    function applyQR(){
+      const qr=$("#qr");
+      if(CONFIG.qrImage){
+        const img=new Image();
+        img.src=CONFIG.qrImage; img.alt="QR"; img.style.width="100%"; img.style.height="100%"; img.loading="eager";
+        qr.innerHTML=""; qr.appendChild(img);
+      }else{
+        qr.textContent="";
+      }
+    }
+
+    // --- 运行时自检（在 Console 可见） ---
+    async function runSelfTests(){
+      console.group("[self-test]");
+      try{
+        const list = await loadQuotes();
+        console.assert(Array.isArray(list) && list.length > 0, "应能获取到至少 1 条 quote");
+        console.log("✓ quotes 条数:", list.length);
+
+        const sample = pickQuote(list, 12345);
+        console.assert(typeof sample === 'string' && sample.length > 0, "pickQuote 应返回字符串");
+        console.log("✓ pickQuote 示例:", sample);
+      }catch(e){
+        console.error("自检失败：", e);
+      }
+      console.groupEnd();
+    }
+
+    async function main(){
+      const sp=new URLSearchParams(location.search);
+      const startStr=sp.get('start')||CONFIG.startDate;
+      const start=new Date(startStr);
+      const today=new Date();
+
+      $("#headline").textContent=CONFIG.headline||"在一起的日子";
+      $("#today").textContent=fmtDate(today);
+
+      const d=daysBetween(start,today);
+      $("#days").textContent=d;
+      $("#since").textContent=`自 ${fmtDate(start)} 起`;
+
+      const ev=nextAnnualEvent(CONFIG.annualEvents||[],today);
+      if(ev) $("#countdown").textContent=`${ev.name}：还有 ${ev.daysLeft} 天（${fmtDate(ev.date)}）`;
+      else $("#countdown-card").style.display='none';
+
+      const loc=CONFIG.location ? {
+        label: sp.get('label') || CONFIG.location.label,
+        latitude: Number(sp.get('lat') || CONFIG.location.latitude),
+        longitude: Number(sp.get('lon') || CONFIG.location.longitude),
+      } : null;
+
+      const w=await loadWeather(loc);
+      if(w){
+        const umbrella=(w.rain && Number(w.rain)>0) ? " · 记得带伞" : "";
+        $("#weather").textContent = `${w.label}：${Math.round(w.temp)}°C${umbrella}`;
+      } else {
+        $("#weather-card").style.display='none';
+      }
+
+      const allQuotes = await loadQuotes();
+      const q = pickQuote(allQuotes, daysSinceEpoch(today));
+      if(q){ document.getElementById("quote").textContent = q; }
+      else { document.getElementById("quote-card").style.display = "none"; }
+
+      applyQR();
+      runSelfTests();
+    }
+
+    main();
+  </script>
+</body>
+</html>
