@@ -33,7 +33,7 @@
     }
     
     .big-number{
-      font-size:120px;
+      font-size:100px;
       font-weight:800;
       line-height:1;
       letter-spacing:2px;
@@ -160,7 +160,7 @@
       $("headline").textContent=CONFIG.headline||"在一起的日子";
       $("today").textContent=fmtDate(today);
       const d=daysBetween(start,today);
-      $("days").textContent=d; $("since").textContent=`自 ${fmtDate(start)} 起`;
+      $("days").textContent=`DAY ${d}`; $("since").textContent=`自 ${fmtDate(start)} 起`;
 
       applyHero(sp); // ← 放在这里即可
 
