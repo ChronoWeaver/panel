@@ -35,7 +35,8 @@
       display: grid;
       grid-template-rows: auto auto 1fr auto;
       row-gap: 14px;
-      transform: translateY(-12px);
+      transform-origin: top center;
+      transform: translateX(-50%) translateY(var(--safe-offset-y)) scale(var(--panel-scale));
     }
     .title { font-weight: 700; font-size: 26px; display:flex; align-items: baseline; justify-content: space-between; }
     .title small { font-weight: 500; font-size: 16px; opacity: .85; }
